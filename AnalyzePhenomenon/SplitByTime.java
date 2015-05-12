@@ -18,7 +18,7 @@ public class SplitByTime {
 
 		if(args.length != 2) 
 		{
-			System.out.println("Too many arguments!");
+			System.out.println("Improper number of arguments!");
 			System.exit(1);
 		}
 		else
