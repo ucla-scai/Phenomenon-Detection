@@ -11,18 +11,18 @@ java SplitByTime 2015/01/01-00:00:00 1-00-00-00
 
 # 2. Now mine the frequent itemsets from each of the days with different support values
 
-mkdir -p data/itemsets/1-00-00-00
+mkdir -p data/itemsets/freq/1-00-00-00
 
 for((i=0; i<=600; i+=5))
 do
 	echo "* Processed $i of Step 2"
 
 	x=$(echo "scale = 2; $i/100" | bc)
-	mkdir -p data/itemsets/1-00-00-00/0"$x"
+	mkdir -p data/itemsets/freq/1-00-00-00/0"$x"
 
 	for((f=1; f<=90; f++))
 	do
-		./fpgrowth data/timesplit/1-00-00-00/"$f".dat data/itemsets/1-00-00-00/0"$x"/"$f".dat -s0"$x"
+		./fpgrowth data/timesplit/1-00-00-00/"$f".dat data/itemsets/freq/1-00-00-00/0"$x"/"$f".dat -s0"$x"
 	done
 done
 
@@ -30,18 +30,18 @@ done
 # CAUTION: BuildComponent can run for files containing less than 250K lines.
 # 	   Therefore, running this experiment for first 45 days, as after that there are 2-3 files which has more lines.
 
-mkdir -p data/phenomenon/1-00-00-00
+mkdir -p data/phenomenon/from_freq/1-00-00-00
 
 for((i=0; i<=600; i+=5))
 do
 	echo "* Processed $i of Step 3"
 
 	x=$(echo "scale = 2; $i/100" | bc)
-	mkdir -p data/phenomenon/1-00-00-00/0"$x"
+	mkdir -p data/phenomenon/from_freq/1-00-00-00/0"$x"
 
 	for((f=1; f<=45; f++))
 	do
-		java BuildConnectedComponents 1-00-00-00/0"$x"/"$f".dat 1-00-00-00/0"$x"/"$f".dat
+		java BuildConnectedComponents freq/1-00-00-00/0"$x"/"$f".dat from_freq/1-00-00-00/0"$x"/"$f".dat
 	done
 done
 
@@ -50,7 +50,7 @@ done
 for((i=0; i<=555; i+=5))
 do
 	s=$(echo "scale = 2; $i/100" | bc)
-	y=$(wc -l data/phenomenon/1-00-00-00/0"$s"/*.dat | tail -1 | awk '{print $1}')
+	y=$(wc -l data/phenomenon/from_freq/1-00-00-00/0"$s"/*.dat | tail -1 | awk '{print $1}')
 	r=$(echo "scale = 2; $y/45" | bc)
 	echo "$s,$y,$r">> results/support_vs_NoOfPhenomenon.csv
 done
