@@ -1,0 +1,1 @@
+* Phenomenon constructed from maximal itemsets (exactly same as from all frequent itemsets).

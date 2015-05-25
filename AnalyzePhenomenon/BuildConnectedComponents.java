@@ -20,7 +20,7 @@ public class BuildConnectedComponents {
 			System.exit(1);
 		}
 
-		final int ubound = 5000; 		//assuming input FI file will never contain more than 'ubound' lines
+		final int ubound = 10000; 		//assuming input FI file will never contain more than 'ubound' lines
 
 		String phendir = "data/phenomenon/";		
 		try {
