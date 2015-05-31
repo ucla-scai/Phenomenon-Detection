@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace ChronologyHierarchy
 {
@@ -12,10 +13,13 @@ namespace ChronologyHierarchy
         static void Main(string[] args)
         {
             var dateHash = @"C:\Users\Justin\Desktop\Persist\School\cs246\Phenomenon-Detection\OrganizePhenomenon\dataset\chronology\timestamp.collection";
-            var setCountsFile = @"setCounts.dat";
+            var biword = @"C:\Users\Justin\Desktop\Persist\School\cs246\Phenomenon-Detection\ChronologyHierarchy\ChronologyHierarchy\biword_assoc_0.15.dat";
+            var monoword = @"C:\Users\Justin\Desktop\Persist\School\cs246\Phenomenon-Detection\ChronologyHierarchy\ChronologyHierarchy\monoword_assoc_0.15.dat";
             var phenomsFile = @"C:\Users\Justin\Desktop\Persist\School\cs246\Phenomenon-Detection\ChronologyHierarchy\ChronologyHierarchy\supp_0.15.txt";
 
             Dictionary<string, string> hashDate = new Dictionary<string, string>();
+            Dictionary<string, int> biwordCounts = new Dictionary<string, int>();
+            Dictionary<string, int> monowordCounts = new Dictionary<string, int>();
             Dictionary<string, int> setCounts = new Dictionary<string, int>();
             Dictionary<string, Dictionary<string, int>> hashSetCounts = new Dictionary<string, Dictionary<string, int>>();
             
@@ -33,17 +37,17 @@ namespace ChronologyHierarchy
                 }
             }
 
-            using (var reader = new StreamReader(setCountsFile))
+            using (var reader = new StreamReader(biword))
             {
                 var line = reader.ReadLine();
 
                 while (line != null)
                 {
-                    var split = line.Split(',');
-                    var count = int.Parse(split[0]);
-                    var set = split.Skip(1).ToList().OrderBy(s => s).ToList();
+                    var spaceSplit = line.Split(' ');
+                    var count = int.Parse(spaceSplit[1]);
+                    var set = spaceSplit[0].Split('-');
                     var sets = string.Join(",", set);
-                    setCounts[sets] = count;
+                    biwordCounts[sets] = count;
                     foreach (var s in set)
                     {
                         if (!hashSetCounts.ContainsKey(s)){ hashSetCounts[s] = new Dictionary<string, int>(); }
@@ -52,6 +56,37 @@ namespace ChronologyHierarchy
                     
                     line = reader.ReadLine();
                 }
+            }
+
+            using (var reader = new StreamReader(monoword))
+            {
+                var line = reader.ReadLine();
+
+                while (line != null)
+                {
+                    var spaceSplit = line.Split(' ');
+                    var count = int.Parse(spaceSplit[1]);
+                    var set = spaceSplit[0].Split('-');
+                    var sets = string.Join(",", set);
+                    monowordCounts[sets] = count;
+                    foreach (var s in set)
+                    {
+                        if (!hashSetCounts.ContainsKey(s)) { hashSetCounts[s] = new Dictionary<string, int>(); }
+                        hashSetCounts[s][sets] = count;
+                    }
+
+                    line = reader.ReadLine();
+                }
+            }
+
+            foreach (var kp in monowordCounts)
+            {
+                setCounts[kp.Key] = kp.Value;
+            }
+
+            foreach (var kp in biwordCounts)
+            {
+                setCounts[kp.Key] = kp.Value;
             }
 
             List<List<Phenom>> phenomsList = new List<List<Phenom>>();
@@ -98,7 +133,16 @@ namespace ChronologyHierarchy
                 trees.Add(tree);
             }
 
-            Console.Read();
+            var treeOutput = "trees.dat";
+            var lines = new List<string>();
+            foreach (var tree in trees)
+            {
+                lines.Add(tree.ToString());
+            }
+
+            treeOutput.DeleteWrite(lines);
+
+            Debug.WriteLine("<DONE>");
         }
 
         private static Dictionary<string, int> Compress(Dictionary<string, int> setCounts, Dictionary<string, Dictionary<string, int>> hashSetCounts, List<Phenom> phenomList, Dictionary<int, List<string>> clusterHash)
@@ -144,16 +188,22 @@ namespace ChronologyHierarchy
         {
             public List<TreeNode> Children;
             public string Name;
+            public int Level { get; set; }
+            public int Frequency { get; set; }
+            public override string ToString()
+            {
+		        return Name + ":" + Frequency.ToString() + ":" + Children.Count.ToString() + " ";
+            }
         }
 
         public class Tree
         {
             Dictionary<string, TreeNode> _nodes = new Dictionary<string, TreeNode>();
-            TreeNode _root = new TreeNode() { Children = new List<TreeNode>(), Name = null };
+            TreeNode _root = new TreeNode() { Children = new List<TreeNode>(), Name = "root", Level = 1, Frequency = 0 };
             private Dictionary<string, int> _setCounts;
             private Dictionary<int, List<string>> _clusterHash;
             private Dictionary<string, int> _hashCluster;
-            
+            private int _depth = 1;
 
             public Tree(Dictionary<string, int> setCounts, Dictionary<int, List<string>> clusterHash, Dictionary<string, int> hashCluster)
             {
@@ -179,9 +229,31 @@ namespace ChronologyHierarchy
                     }
                 }
 
-                var treeNode = new TreeNode() { Children = new List<TreeNode>(), Name = winner };
+                var treeNode = new TreeNode() { Children = new List<TreeNode>(), Name = winner, Level = maxParent.Level+1, Frequency = 0 };
                 maxParent.Children.Add(treeNode);
+                _depth = Math.Max(_depth, treeNode.Level);
                 _nodes[winner] = treeNode;
+            }
+
+            public override string ToString()
+            {
+                return ToStringRec(_root, 0);
+            }
+
+            private string ToStringRec(TreeNode node, int depth)
+            {
+                var tree = new StringBuilder();
+                for (int i = 0; i < depth; i++)
+                {
+                    tree.Append("\t");
+                }
+                tree.Append("-" + node.ToString() + "\n");
+		        for(int i=0; i<node.Children.Count; i++)
+		        {
+                    var tmp = node.Children[i];
+                    tree.Append(ToStringRec(tmp, depth + 1));
+		        }
+                return tree.ToString();
             }
         }
 
